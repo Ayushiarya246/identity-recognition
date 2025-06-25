@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Identity Verification</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <div class="heading">
+        <i><h1>Identity Verification</h1></i>
+    </div>
+    <div class="document">
+      <div class="face">
+          <button id="start">Start Video</button>
+          <div class="video">
+            <video id="video" autoplay playsinline></video>
+          </div>
+          <div class="capture-feature">
+            <button id="capture" class="selfie">Capture Selfie</button>
+            <button id="tryAgain" class="selfie" style="display:none;">Try Again</button>
+          </div>
+      </div>
+      <div class="upload-container">
+        <button><input type="file" id="idCard" accept="image/*"></button>
+        <div class="doc" >
+        </div>
+        <button id="upload">Upload Id Card</button>
+        </div>
+      <p id="resultMsg" style="font-weight: bold; margin-top: 20px;"></p>
+    </div>
+    <div class="submitBtn">
+      <button id="submit" class="selfie" style="display: none;">Submit</button>
+    </div>
+    
+  </main>
+    
+
+  <script src="script.js"></script>
+</body>
+</html>
