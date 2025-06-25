@@ -7,13 +7,10 @@ const canvas = document.createElement("canvas");
 const submit = document.querySelector("#submit");
 
 let capturedSelfieData = null;
-let idCardImageData = null;
 let stream = null;
-
 let captured = false;
 let uploaded = false;
 
-// Start Webcam
 startBtn.addEventListener("click", async () => {
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -25,36 +22,35 @@ startBtn.addEventListener("click", async () => {
   }
 });
 
-// Capture Selfie
 captureBtn.addEventListener("click", () => {
   if (!stream) {
     alert("Start video first");
-    return;
+  } else {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    videoContainer.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = canvas.toDataURL("image/png");
+    img.alt = "Captured Selfie";
+    img.style.maxWidth = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+    videoContainer.appendChild(img);
+
+    capturedSelfieData = img.src;
+    captureBtn.style.display = "none";
+    tryAgainBtn.style.display = "inline-block";
+    captured = true;
   }
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-
-  stream.getTracks().forEach((track) => track.stop());
-
-  videoContainer.innerHTML = "";
-  const img = document.createElement("img");
-  img.src = canvas.toDataURL("image/png");
-  img.alt = "Captured Selfie";
-  img.style.maxWidth = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = "cover";
-  videoContainer.appendChild(img);
-
-  capturedSelfieData = img.src;
-  captureBtn.style.display = "none";
-  tryAgainBtn.style.display = "inline-block";
-  captured = true;
 });
 
-// Try Again
 tryAgainBtn.addEventListener("click", () => {
   location.reload();
 });
@@ -64,47 +60,42 @@ const resultMsg = document.getElementById("resultMsg");
 const idCardInput = document.getElementById("upload");
 const fileInput = document.getElementById("idCard");
 
-fileInput.addEventListener("change", (event) => {
-  const file = event.target.files[0];
+idCardInput.addEventListener("click", () => {
+  const file = fileInput.files[0];
   if (!file) {
-    alert("Please select an ID image.");
+    alert("Select the file first");
     return;
   }
-
   if (!file.type.startsWith("image/")) {
     alert("Only image files are allowed.");
     return;
   }
-
   const reader = new FileReader();
   reader.onload = function (e) {
-    idCardImageData = e.target.result;
-    idUploadContainer.innerHTML = `<img src="${idCardImageData}" alt="ID Preview" />`;
-    uploaded = true;
-    submit.style.display = "inline-block";
+    idUploadContainer.innerHTML = `<img src="${e.target.result}" alt="ID Preview">`;
   };
   reader.readAsDataURL(file);
+  submit.style.display = "inline-block";
+  uploaded = true;
 });
 
 submit.addEventListener("click", async () => {
   if (!captured || !uploaded) {
-    alert("Please capture selfie and upload ID card first.");
+    alert("Please capture your selfie and upload your ID card.");
     return;
   }
+
+  const formData = new FormData();
+  formData.append("selfie", dataURLtoBlob(capturedSelfieData));
+  formData.append("id_card", fileInput.files[0]);
 
   resultMsg.innerText = "Verifying...";
   resultMsg.style.color = "black";
 
   try {
-    const res = await fetch("https://web-production-de1b7.up.railway.app/verify", {
+    const res = await fetch("https://web-production-dc04.up.railway.app/verify", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        selfie: capturedSelfieData,
-        idCard: idCardImageData
-      })
+      body: formData,
     });
 
     const result = await res.json();
@@ -141,3 +132,16 @@ submit.addEventListener("click", async () => {
     resultMsg.style.color = "red";
   }
 });
+
+// Convert base64 to Blob
+function dataURLtoBlob(dataURL) {
+  const parts = dataURL.split(",");
+  const byteString = atob(parts[1]);
+  const mimeString = parts[0].split(":")[1].split(";")[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
